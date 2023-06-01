@@ -2,21 +2,18 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import helmet from 'helmet';
 import { ConfigService } from '@nestjs/config';
-import * as csurf from 'csurf';
 import * as expressStatusMonitor from 'express-status-monitor';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as morgan from 'morgan';
 import { Logger } from '@nestjs/common';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { cors: true });
+  const app = await NestFactory.create(AppModule, {
+    cors: { origin: process.env.CORS },
+  });
   const env = app.get(ConfigService);
 
   const isProd = env.get('NODE_ENV') === 'production';
-
-  if (isProd) {
-    app.use(csurf());
-  }
 
   const config = new DocumentBuilder()
     .setTitle('Interns Finder')
