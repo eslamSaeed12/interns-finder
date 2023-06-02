@@ -26,7 +26,6 @@ export class Intern {
   @ApiProperty()
   url: string;
 
-  @Prop()
   @IsString()
   @Prop({ unique: true })
   @ApiProperty()

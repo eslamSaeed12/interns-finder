@@ -35,7 +35,7 @@ export class InternService {
     return this.buildQuery(this.model, query);
   }
 
-  protected setPagination(page:number, take:number) {
+  protected setPagination(page: number, take: number) {
     return {
       skip: page * take,
       limit: take,
@@ -72,7 +72,10 @@ export class InternService {
     }
 
     if (query.search) {
-      queryInternals.where['title'] = { regex: '.*' + query.search + '.*' };
+      queryInternals.where['title'] = {
+        $regex: query.search,
+        $options: 'i',
+      };
     }
 
     if (query.filters) {
@@ -99,9 +102,8 @@ export class InternService {
         ..._?.pick(query, 'company', 'provider', 'location'),
       };
     }
-
     return this.refineData(
-      await model.find(queryInternals.where, {}, queryInternals.options),
+      await model.find(queryInternals.where, {}, queryInternals.options).exec(),
       'successfully find interns',
       query.page,
       query.take,
@@ -109,6 +111,6 @@ export class InternService {
   }
 
   protected refineData(data: any, mssage: string, page: number, take: number) {
-    return { data, mssage, page, take };
+    return { data, mssage, page, take, count: data?.length };
   }
 }

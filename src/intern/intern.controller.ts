@@ -86,7 +86,7 @@ export class GetInternsSortBy {
   @IsEnum(Sorter)
   @IsOptional()
   @ApiProperty({ enum: Sorter, required: false })
-  provider: Sorter;
+  proivder: Sorter;
 }
 
 export class GetInternsQuery {
