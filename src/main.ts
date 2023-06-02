@@ -27,6 +27,7 @@ async function bootstrap() {
 
   Sentry.init({
     dsn: env.getOrThrow('SENTRY_KEY'),
+    enabled: isProd
   });
 
   app.use(helmet({ contentSecurityPolicy: isProd }));
