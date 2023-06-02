@@ -18,7 +18,6 @@ export class AppController {
   @ApiResponse({ type: String, status: 200 })
   @ApiResponse({ type: OmitType(HttpException, ['errors']), status: 500 })
   getHello() {
-    throw  new Error("testing sentry")
     return this.appService.getHello();
   }
 
