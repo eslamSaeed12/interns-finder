@@ -6,10 +6,11 @@ import * as expressStatusMonitor from 'express-status-monitor';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as morgan from 'morgan';
 import { Logger } from '@nestjs/common';
+import * as Sentry from '@sentry/node';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
-    cors: { origin: process.env.CORS },
+    cors: true,
   });
   const env = app.get(ConfigService);
 
@@ -24,6 +25,10 @@ async function bootstrap() {
 
   const document = SwaggerModule.createDocument(app, config);
 
+  Sentry.init({
+    dsn: env.getOrThrow('SENTRY_KEY'),
+  });
+
   app.use(helmet({ contentSecurityPolicy: isProd }));
   app.use(
     morgan('combined', {
@@ -36,8 +41,9 @@ async function bootstrap() {
     }),
   );
 
+  SwaggerModule.setup('/docs', app, document);
+
   if (!isProd) {
-    SwaggerModule.setup('/docs', app, document);
     app.use(expressStatusMonitor({ path: '/status' }));
   }
 

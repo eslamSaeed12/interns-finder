@@ -6,6 +6,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { InternModule } from './intern/intern.module';
 import { BullModule } from '@nestjs/bull';
 import { ScheduleModule } from '@nestjs/schedule';
+import { SentryInterceptor } from './sentry/sentry.interceptor';
 
 @Module({
   imports: [
@@ -18,12 +19,13 @@ import { ScheduleModule } from '@nestjs/schedule';
       useFactory: (config: ConfigService) => ({
         url: config.getOrThrow('REDIS_URI'),
       }),
-      inject:[ConfigService],
-      imports: [ConfigModule]
+      inject: [ConfigService],
+      imports: [ConfigModule],
     }),
     MongooseModule.forRootAsync({
       useFactory: (config: ConfigService) => ({
         uri: config.getOrThrow('MONGO_URI'),
+        autoIndex: true,
       }),
       inject: [ConfigService],
       imports: [ConfigModule],
@@ -31,6 +33,6 @@ import { ScheduleModule } from '@nestjs/schedule';
     InternModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService,SentryInterceptor],
 })
 export class AppModule {}

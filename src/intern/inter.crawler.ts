@@ -1,10 +1,11 @@
-import { Process, Processor } from '@nestjs/bull';
+import { OnQueueError, Process, Processor } from '@nestjs/bull';
 import { Job } from 'bull';
 import * as puppeteer from 'puppeteer';
 import cherio from 'cheerio';
 import { Logger } from '@nestjs/common';
 import { Intern, InternMode } from './intern.schema';
 import { InternService } from './intern.service';
+import * as Sentry from '@sentry/node';
 
 export interface ICrawlerPayload {
   from: 'Wuzzuf' | 'Linkedin' | 'Indeed' | 'Tanqeeb';
@@ -43,7 +44,6 @@ export class InternCrawler {
       const errors = await this.internService.Validate(scrabed);
 
       if (errors.length) {
-        Logger.log(errors);
         throw new Error(
           'validation Error on Crawling'.concat(' ', ':', job.data.from),
         );
@@ -505,5 +505,10 @@ export class InternCrawler {
       await page.close();
       throw err;
     }
+  }
+
+  @OnQueueError()
+  HasCaptredError(error: Error) {
+    Sentry.captureException(error);
   }
 }

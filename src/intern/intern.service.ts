@@ -6,9 +6,8 @@ import { Intern } from './intern.schema';
 import { ICrawlerPayload } from './inter.crawler';
 import { validate } from 'class-validator';
 import { plainToInstance } from 'class-transformer';
-import { FilterSortBody, GetInternsQuery } from './intern.controller';
-import { GetInternsSortBy } from './intern.controller';
-import _ from 'lodash';
+import { GetInternsQuery } from './intern.controller';
+import * as _ from 'lodash';
 import { InjectModel } from '@nestjs/mongoose';
 
 @Injectable()
@@ -19,8 +18,9 @@ export class InternService {
   ) {}
 
   Save(interns: Array<Partial<Intern>>) {
-    console.log(interns);
-    // return this.model.updateMany(interns, {}, { upsert: true });
+    return this.model.insertMany(interns, {
+      throwOnValidationError: false,
+    });
   }
 
   CallCrawler(type: ICrawlerPayload) {
@@ -31,7 +31,7 @@ export class InternService {
     return validate(plainToInstance(Intern, data));
   }
 
-  Get(query: GetInternsQuery & FilterSortBody) {
+  Get(query: GetInternsQuery) {
     return this.buildQuery(this.model, query);
   }
 
@@ -42,32 +42,50 @@ export class InternService {
     };
   }
 
-  protected setSorting(sorters: GetInternsSortBy) {
+  protected setSorting(
+    sorters: Pick<
+      GetInternsQuery,
+      'S_proivder' | 'S_location' | 'S_datePosted'
+    >,
+  ) {
+    const mapper = {
+      S_proivder: 'proivder',
+      S_location: 'location',
+      S_datePosted: 'datePosted',
+    };
+    const sort = _.mapKeys(sorters, (key, value) => mapper[key]);
+
     return {
-      sort: sorters,
+      sort,
     };
   }
 
-  async buildQuery(
-    model: Model<Intern>,
-    query: GetInternsQuery & FilterSortBody,
-  ) {
+  async buildQuery(model: Model<Intern>, query: GetInternsQuery) {
     const queryInternals = {
       options: {},
       search: {},
       where: {},
     };
 
+    const filters = _.pick(query, [
+      'F_provider',
+      'F_location',
+      'F_company',
+      'F_fields',
+      'F_dateFrom',
+      'F_dateTo',
+    ]);
+    const sorters = _.pick(query, ['S_datePosted', 'S_location', 'S_proivder']);
     if (query.page && query.take) {
       queryInternals['options'] = {
         ...this.setPagination(query.page, query.take),
       };
     }
 
-    if (query.sorters) {
+    if (Object.keys(sorters)) {
       queryInternals['options'] = {
         ...queryInternals?.options,
-        ...this.setSorting(query.sorters),
+        ...this.setSorting(sorters),
       };
     }
 
@@ -78,23 +96,23 @@ export class InternService {
       };
     }
 
-    if (query.filters) {
-      if (query?.filters?.dateFrom) {
+    if (Object.keys(filters)) {
+      if (query?.F_dateFrom) {
         queryInternals.where['datePosted'] = {
           ...queryInternals.where['datePosted'],
-          $gte: new Date(query?.filters?.dateFrom),
+          $gte: new Date(query?.F_dateFrom),
         };
       }
 
-      if (query.filters.dateTo) {
+      if (query.F_dateTo) {
         queryInternals.where['datePosted'] = {
           ...queryInternals.where['datePosted'],
-          $lte: new Date(query.filters.dateTo),
+          $lte: new Date(query.F_dateTo),
         };
       }
 
-      if (query.filters.fields) {
-        queryInternals.where['fields'] = { $in: [...query.filters.fields] };
+      if (query.F_fields) {
+        queryInternals.where['fields'] = { $in: [...query.F_fields] };
       }
 
       queryInternals.where = {
@@ -110,7 +128,38 @@ export class InternService {
     );
   }
 
-  protected refineData(data: any, mssage: string, page: number, take: number) {
+  protected refineData(data: any, mssage: string, page?: number, take?: number) {
     return { data, mssage, page, take, count: data?.length };
+  }
+
+  async getCompanies() {
+    const data = await this.model.find().select('company').distinct('company');
+
+    return this.refineData(data, 'successfully find comapnies');
+  }
+
+  async getLocations() {
+    const data = await this.model
+      .find()
+      .select('location')
+      .distinct('location');
+
+    return this.refineData(data, 'successfully find locations');
+  }
+  async getProviders() {
+    const data = await this.model
+      .find()
+      .select('proivder')
+      .distinct('proivder');
+
+    return this.refineData(data, 'successfully find providers');
+  }
+  async getFields() {
+    const data = await this.model.find().select('fields');
+
+    return this.refineData(
+      _.uniq(_.flatMap(data, (it) => it?.fields)),
+      'successfully find fields',
+    );
   }
 }

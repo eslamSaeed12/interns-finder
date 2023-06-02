@@ -19,7 +19,13 @@ export enum InternMode {
 
 export type InternDocument = HydratedDocument<Intern>;
 
-@Schema({ versionKey: false, timestamps: false, collection: 'intern' })
+@Schema({
+  autoIndex: true,
+  versionKey: false,
+  timestamps: false,
+  collection: 'intern',
+  autoCreate: true,
+})
 export class Intern {
   @IsUrl()
   @Prop()
@@ -27,8 +33,8 @@ export class Intern {
   url: string;
 
   @IsString()
-  @Prop({ unique: true })
   @ApiProperty()
+  @Prop()
   title: string;
 
   @Prop({ isRequired: false })
@@ -84,3 +90,8 @@ export class Intern {
 }
 
 export const InternSchema = SchemaFactory.createForClass(Intern);
+
+InternSchema.index(
+  { title: 1, location: 1, datePosted: 1, proivder: 1, company: 1 },
+  { unique: true },
+);

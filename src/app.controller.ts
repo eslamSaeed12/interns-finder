@@ -1,10 +1,12 @@
-import { Controller, Get, Req } from '@nestjs/common';
+import { Controller, Get, Req, UseInterceptors } from '@nestjs/common';
 import { AppService } from './app.service';
 import { ApiOperation, ApiResponse, ApiTags, OmitType } from '@nestjs/swagger';
 import { HttpException } from './intern/intern.controller';
+import { SentryInterceptor } from './sentry/sentry.interceptor';
 
 @Controller('/api')
-@ApiTags('home')
+@ApiTags('utils')
+@UseInterceptors(SentryInterceptor)
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
@@ -16,17 +18,8 @@ export class AppController {
   @ApiResponse({ type: String, status: 200 })
   @ApiResponse({ type: OmitType(HttpException, ['errors']), status: 500 })
   getHello() {
+    throw  new Error("testing sentry")
     return this.appService.getHello();
   }
 
-  @Get('/verify')
-  @ApiOperation({
-    description: 'get the csrf token for the request',
-    summary: 'csrf token',
-  })
-  @ApiResponse({ type: OmitType(HttpException, ['errors']), status: 500 })
-  @ApiResponse({ type: String, status: 200 })
-  setCsrf(@Req() req) {
-    return req.csrfToken();
-  }
 }
