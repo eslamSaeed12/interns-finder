@@ -120,16 +120,26 @@ export class InternService {
         ..._?.pick(query, 'company', 'provider', 'location'),
       };
     }
+
+    const count = await this.count(queryInternals.where);
+
     return this.refineData(
       await model.find(queryInternals.where, {}, queryInternals.options).exec(),
       'successfully find interns',
       query.page,
       query.take,
+      count,
     );
   }
 
-  protected refineData(data: any, mssage: string, page?: number, take?: number) {
-    return { data, mssage, page, take, count: data?.length };
+  protected refineData(
+    data: any,
+    mssage: string,
+    page?: number,
+    take?: number,
+    count?: number,
+  ) {
+    return { data, mssage, page, take, count };
   }
 
   async getCompanies() {
@@ -161,5 +171,9 @@ export class InternService {
       _.uniq(_.flatMap(data, (it) => it?.fields)),
       'successfully find fields',
     );
+  }
+
+  async count(condition) {
+    return this.model.count(condition);
   }
 }
